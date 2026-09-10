@@ -1,0 +1,26 @@
+services:
+  media-downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: media-downloader
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./downloads:/data/downloads
+      - ./temp:/data/temp
+    environment:
+      APP_PORT: "8080"
+      APP_HOST: "0.0.0.0"
+      DOWNLOAD_DIR: "/data/downloads"
+      TEMP_DIR: "/data/temp"
+      MAX_CONCURRENT_DOWNLOADS: "2"
+      DOWNLOAD_RETENTION: "86400"
+      TEMP_RETENTION: "3600"
+      YTDLP_AUTO_UPDATE: "true"
+      YTDLP_UPDATE_INTERVAL: "86400"
+      YTDLP_UPDATE_CHANNEL: "stable"
+      MAX_DOWNLOAD_SIZE: "10G"
+      DOWNLOAD_TIMEOUT: "3600"
+      LOG_LEVEL: "INFO"
+    restart: unless-stopped

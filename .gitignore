@@ -1,0 +1,27 @@
+# Environments
+.venv/
+venv/
+env/
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Application storage & scratch
+downloads/
+temp/
+data/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
