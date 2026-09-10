@@ -19,6 +19,23 @@ async def get_system_info_endpoint() -> SystemInfoResponse:
     ytdlp_ver = await YtDlpService.get_version()
     update_avail, _, latest_ver = await YtDlpUpdater.check_update_needed()
 
+    import shutil
+    storage_data = None
+    try:
+        total, used, free = shutil.disk_usage(settings.download_path)
+        percent_used = round((used / total) * 100, 1) if total > 0 else 0.0
+        storage_data = {
+            "total_bytes": total,
+            "free_bytes": free,
+            "used_bytes": used,
+            "percent_used": percent_used,
+            "free_formatted": f"{free / (1024**3):.1f} GB",
+            "total_formatted": f"{total / (1024**3):.1f} GB",
+            "used_formatted": f"{used / (1024**3):.1f} GB",
+        }
+    except Exception:
+        pass
+
     return SystemInfoResponse(
         app_name=settings.APP_NAME,
         app_version=settings.APP_VERSION,
@@ -32,6 +49,7 @@ async def get_system_info_endpoint() -> SystemInfoResponse:
         download_retention=settings.DOWNLOAD_RETENTION,
         temp_retention=settings.TEMP_RETENTION,
         max_download_size=settings.MAX_DOWNLOAD_SIZE,
+        storage_info=storage_data,
     )
 
 

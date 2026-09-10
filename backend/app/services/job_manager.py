@@ -28,14 +28,17 @@ class JobManager:
     async def create_job(self, req: DownloadRequest) -> Job:
         """Create a new download job and schedule its asynchronous execution."""
         job_id = str(uuid.uuid4())
+        cfg = req.get_resolved_config()
+
         job = Job(
             id=job_id,
             url=req.url,
             title=req.title,
-            resolution=req.resolution,
-            audio_only=req.audio_only,
-            audio_format=req.audio_format,
-            output_container=req.output_container,
+            config=cfg,
+            resolution=cfg.quality,
+            audio_only=(cfg.audio_mode == "audio_only"),
+            audio_format=cfg.audio_format,
+            output_container=cfg.output_container,
             status=JobStatus.QUEUED,
             current_stage="Queued in download manager",
         )
@@ -137,10 +140,11 @@ class JobManager:
             temp_dir = FileService.get_job_temp_dir(job_id)
             job.temp_dir = temp_dir
 
-            # Build download arguments
+            # Build download arguments using structured config
             cmd = YtDlpService.build_download_command(
                 url=job.url,
                 temp_dir=temp_dir,
+                config=job.config,
                 resolution=job.resolution,
                 audio_only=job.audio_only,
                 audio_format=job.audio_format,

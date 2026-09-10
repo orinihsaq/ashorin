@@ -4,6 +4,7 @@ import {
   DownloadResponse,
   JobListResponse,
   JobResponse,
+  PresetsResponse,
   SystemInfoResponse,
 } from '../types';
 
@@ -33,6 +34,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  async getPresets(): Promise<PresetsResponse> {
+    const res = await fetch('/api/presets');
+    return handleResponse<PresetsResponse>(res);
+  },
+
   async analyzeUrl(url: string): Promise<AnalyzeResponse> {
     const res = await fetch('/api/analyze', {
       method: 'POST',

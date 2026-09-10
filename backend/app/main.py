@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import analyze, download, files, jobs, system
+from app.routers import analyze, download, files, jobs, presets, system
 from app.services.cleanup import CleanupService
 from app.services.file_service import FileService
 from app.services.updater import YtDlpUpdater
@@ -41,9 +41,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Media Downloader Pro",
+    title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Production-grade self-hosted media downloader powered by yt-dlp and FFmpeg.",
+    description="Engineered high-performance self-hosted media extraction utility powered by yt-dlp and FFmpeg.",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -62,6 +62,7 @@ app.add_middleware(
 app.include_router(analyze.router)
 app.include_router(download.router)
 app.include_router(jobs.router)
+app.include_router(presets.router)
 app.include_router(files.router)
 app.include_router(system.router)
 

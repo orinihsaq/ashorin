@@ -43,7 +43,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    APP_NAME: str = "Media Downloader Pro"
+    APP_NAME: str = "ashoriN"
     APP_VERSION: str = "1.0.0"
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8080

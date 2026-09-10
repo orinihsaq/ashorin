@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { UrlInput } from './components/UrlInput';
-import { MediaCard } from './components/MediaCard';
-import { FormatSelector } from './components/FormatSelector';
+import { MediaWorkspace } from './components/MediaWorkspace';
+import { DownloadConfigArea } from './components/DownloadConfigArea';
 import { DownloadProgress } from './components/DownloadProgress';
 import { JobHistory } from './components/JobHistory';
 import { SystemInfoModal } from './components/SystemInfoModal';
@@ -11,7 +11,13 @@ import { Footer } from './components/Footer';
 import { useTheme } from './hooks/useTheme';
 import { useJobEvents } from './hooks/useJobEvents';
 import { api } from './services/api';
-import { AnalyzeResponse, JobResponse, SystemInfoResponse } from './types';
+import {
+  AnalyzeResponse,
+  DownloadConfig,
+  JobResponse,
+  PresetDefinition,
+  SystemInfoResponse,
+} from './types';
 
 export const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -23,6 +29,7 @@ export const App: React.FC = () => {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [presets, setPresets] = useState<PresetDefinition[]>([]);
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSystemInfoOpen, setIsSystemInfoOpen] = useState(false);
@@ -32,7 +39,16 @@ export const App: React.FC = () => {
   // Subscribe to real-time events for the active download job
   const { job: activeJob } = useJobEvents(currentJobId);
 
-  // Load system info and recent jobs on mount
+  // Load presets, system info, and recent jobs on mount
+  const refreshPresets = useCallback(async () => {
+    try {
+      const data = await api.getPresets();
+      setPresets(data.presets);
+    } catch (err) {
+      console.error('Failed to load presets:', err);
+    }
+  }, []);
+
   const refreshSystemInfo = useCallback(async () => {
     try {
       const data = await api.getSystemInfo();
@@ -52,9 +68,10 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    refreshPresets();
     refreshSystemInfo();
     refreshJobs();
-  }, [refreshSystemInfo, refreshJobs]);
+  }, [refreshPresets, refreshSystemInfo, refreshJobs]);
 
   // When active job updates from SSE, sync with jobs list
   useEffect(() => {
@@ -82,19 +99,14 @@ export const App: React.FC = () => {
       const result = await api.analyzeUrl(targetUrl);
       setMedia(result);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to analyze URL. Please verify the link.');
+      setErrorMessage(err.message || 'Failed to inspect media. Please verify the URL.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Handle Download Submission
-  const handleStartDownload = async (params: {
-    resolution: string;
-    audio_only: boolean;
-    audio_format: string;
-    output_container: string;
-  }) => {
+  // Handle Download Submission with structured DownloadConfig
+  const handleStartDownload = async (config: DownloadConfig) => {
     if (!media) return;
     setErrorMessage(null);
     setIsStartingDownload(true);
@@ -103,16 +115,13 @@ export const App: React.FC = () => {
       const res = await api.startDownload({
         url: media.url,
         title: media.title,
-        resolution: params.resolution,
-        audio_only: params.audio_only,
-        audio_format: params.audio_format,
-        output_container: params.output_container,
+        config: config,
       });
 
       setCurrentJobId(res.job_id);
       refreshJobs();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to queue download.');
+      setErrorMessage(err.message || 'Failed to queue download job.');
     } finally {
       setIsStartingDownload(false);
     }
@@ -141,7 +150,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Reset workflow
+  // Reset workflow for new media
   const handleReset = () => {
     setMedia(null);
     setCurrentJobId(null);
@@ -173,14 +182,19 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 sm:py-12 space-y-8">
-        {/* Hero Section Header */}
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Media Downloader
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
+        {/* Hero Section */}
+        <div className="text-center space-y-2.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/60 shadow-xs">
+            <span>PRECISION MEDIA EXTRACTION</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 font-sans">
+            ashori<span className="text-brand-600 dark:text-brand-400">N</span>
           </h2>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-md mx-auto">
-            Download media from supported websites with selectable resolutions, audio extraction, and real-time progress.
+
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            High-performance self-hosted media extraction engine. Selectable optimization presets, granular yt-dlp parameter controls, and native FFmpeg stream muxing.
           </p>
         </div>
 
@@ -210,9 +224,10 @@ export const App: React.FC = () => {
         {/* Media Details & Format Selection (if analyzed and no job currently running) */}
         {media && !activeJob && (
           <div className="space-y-5 animate-in fade-in duration-300">
-            <MediaCard media={media} />
-            <FormatSelector
+            <MediaWorkspace media={media} />
+            <DownloadConfigArea
               media={media}
+              presets={presets}
               onStartDownload={handleStartDownload}
               isStarting={isStartingDownload}
             />
@@ -228,7 +243,7 @@ export const App: React.FC = () => {
         onDeleteJob={handleDeleteJob}
       />
 
-      {/* System Info Modal */}
+      {/* System Diagnostics Modal */}
       <SystemInfoModal
         isOpen={isSystemInfoOpen}
         onClose={() => setIsSystemInfoOpen(false)}

@@ -16,8 +16,8 @@ RUN npm run build
 # ==========================================
 FROM python:3.12-slim-bookworm AS runtime
 
-LABEL maintainer="Media Downloader Pro"
-LABEL description="Production-grade self-hosted media downloader powered by yt-dlp and FFmpeg"
+LABEL maintainer="ashoriN"
+LABEL description="Precision high-performance self-hosted media extraction utility powered by yt-dlp and FFmpeg"
 
 # Install runtime system packages: FFmpeg, curl (for healthcheck), ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \

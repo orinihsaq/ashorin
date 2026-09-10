@@ -11,7 +11,12 @@ export interface VideoQualityOption {
   label: string;
   resolution: string;
   height: number | null;
+  width?: number | null;
+  fps?: number | null;
+  vcodec?: string | null;
+  acodec?: string | null;
   filesize_approx: string | null;
+  tbr?: number | null;
   ext: string;
 }
 
@@ -19,6 +24,17 @@ export interface AudioQualityOption {
   label: string;
   format: string;
   ext: string;
+  bitrate?: string | null;
+}
+
+export interface TechnicalSummary {
+  resolution_str?: string | null;
+  fps?: number | null;
+  vcodec?: string | null;
+  acodec?: string | null;
+  tbr?: number | null;
+  format_count: number;
+  media_type: string;
 }
 
 export interface AnalyzeResponse {
@@ -28,13 +44,55 @@ export interface AnalyzeResponse {
   duration: number | null;
   duration_string: string | null;
   uploader: string | null;
+  uploader_avatar?: string | null;
+  upload_date?: string | null;
+  view_count?: number | null;
+  like_count?: number | null;
   webpage_url: string;
   extractor: string;
+  media_type: string;
   video_available: boolean;
   audio_available: boolean;
   video_options: VideoQualityOption[];
   audio_options: AudioQualityOption[];
   supported_containers: string[];
+  technical_summary?: TechnicalSummary | null;
+}
+
+export interface DownloadConfig {
+  preset: string;
+  quality: string;
+  output_container: string;
+  audio_mode: 'merge' | 'audio_only';
+  audio_format: string;
+  audio_quality: string;
+  video_codec: string;
+  filename_template: string;
+  subtitles: boolean;
+  embed_subtitles: boolean;
+  auto_subtitles: boolean;
+  subtitle_langs: string;
+  embed_metadata: boolean;
+  embed_thumbnail: boolean;
+  write_chapters: boolean;
+  retries: number;
+  timeout: number;
+  concurrent_fragments: number;
+  playlist_mode: 'single' | 'playlist';
+  playlist_items?: string | null;
+}
+
+export interface PresetDefinition {
+  id: string;
+  name: string;
+  description: string;
+  badge?: string | null;
+  config: DownloadConfig;
+}
+
+export interface PresetsResponse {
+  presets: PresetDefinition[];
+  default_preset: string;
 }
 
 export interface DownloadRequest {
@@ -44,6 +102,7 @@ export interface DownloadRequest {
   audio_only?: boolean;
   audio_format?: string;
   output_container?: string;
+  config?: DownloadConfig;
 }
 
 export interface DownloadResponse {
@@ -72,12 +131,23 @@ export interface JobResponse {
   output_filesize_formatted: string | null;
   error_message: string | null;
   download_url: string | null;
+  config_summary?: string | null;
 }
 
 export interface JobListResponse {
   jobs: JobResponse[];
   total: number;
   active_count: number;
+}
+
+export interface StorageInfo {
+  total_bytes: number;
+  free_bytes: number;
+  used_bytes: number;
+  percent_used: number;
+  free_formatted: string;
+  total_formatted: string;
+  used_formatted: string;
 }
 
 export interface SystemInfoResponse {
@@ -93,4 +163,5 @@ export interface SystemInfoResponse {
   download_retention: number;
   temp_retention: number;
   max_download_size: string;
+  storage_info?: StorageInfo | null;
 }

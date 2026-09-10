@@ -52,6 +52,27 @@ class FileService:
         return final_name
 
     @staticmethod
+    def sanitize_filename_template(template: str) -> str:
+        """
+        Sanitizes custom yt-dlp filename template to strictly prevent directory traversal,
+        absolute paths, and invalid filesystem characters.
+        """
+        if not template or not isinstance(template, str):
+            return "%(title).150B.%(ext)s"
+
+        # Disallow directory separators, null bytes, and parent references
+        clean = template.replace("..", "").replace("/", "").replace("\\", "").replace("\0", "").strip()
+        # Remove colon/drive letters
+        clean = re.sub(r'^[a-zA-Z]:', '', clean)
+        clean = re.sub(r'[\\/:*?"<>|\x00-\x1f]', '_', clean)
+
+        # Ensure safe fallback if cleaned string has no valid extension or is empty
+        if not clean or not ("%" in clean):
+            return "%(title).150B.%(ext)s"
+
+        return clean[:100]
+
+    @staticmethod
     def get_safe_file_path(base_dir: Path | str, relative_name: str) -> Path:
         """
         Resolves path and guarantees it resides within base_dir (prevents directory traversal).

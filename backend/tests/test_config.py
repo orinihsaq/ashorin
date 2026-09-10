@@ -21,7 +21,7 @@ def test_parse_bytes_invalid():
 
 def test_settings_defaults():
     s = Settings()
-    assert s.APP_NAME == "Media Downloader Pro"
+    assert s.APP_NAME == "ashoriN"
     assert s.MAX_CONCURRENT_DOWNLOADS >= 1
     assert s.DOWNLOAD_RETENTION >= 0
     assert s.TEMP_RETENTION >= 0
