@@ -10,16 +10,35 @@ services:
     ports:
       - "8080:8080"
 
-    user: "10001:10"
+    # Run as root with tightly scoped Linux capabilities.
+    # All capabilities are dropped first; only the three needed for NAS bind-mount
+    # access are added back:
+    #   DAC_OVERRIDE  — bypass filesystem permission checks on bind-mounted NAS dirs
+    #   CHOWN         — allow chown on files created during download/extraction
+    #   FOWNER        — allow chmod on files owned by other UIDs (pre-existing NAS files)
+    user: "0:0"
+
+    # Use Docker's default bridge network.
+    # UGREEN UGOS (and most NAS operating systems) only route WAN traffic through
+    # the built-in bridge network. Compose normally creates an isolated project
+    # network that has no outbound internet access on UGOS — this fixes TMDB,
+    # yt-dlp, and any other external connectivity.
+    network_mode: "bridge"
+
+    # Explicit public DNS resolvers ensure name resolution works even when the NAS
+    # DNS daemon is not reachable from inside the Docker bridge subnet.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
     volumes:
       - type: bind
-        source: ./data
+        source: /volume1/docker/ashorin/data
         target: /data
         read_only: false
 
       - type: bind
-        source: ./media
+        source: /volume1/docker/ashorin/media
         target: /media
         read_only: false
 
@@ -41,13 +60,12 @@ services:
       TMDB_ENABLED: "true"
       TMDB_API_KEY: ""
 
-    # Use Docker's default bridge network so outbound internet access works on
-    # UGREEN/NAS environments. Compose normally creates an isolated project network
-    # that lacks a WAN route on UGOS — this matches the behaviour of UI-created containers.
-    network_mode: "bridge"
-
     security_opt:
       - no-new-privileges:true
 
     cap_drop:
       - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - CHOWN
+      - FOWNER
