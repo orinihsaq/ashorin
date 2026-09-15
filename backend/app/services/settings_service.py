@@ -54,34 +54,35 @@ class SettingsService:
         self._initialized: bool = False
 
     def _get_default_storage_folders(self) -> Dict[str, str]:
-        data_dir = Path("/data")
-        if data_dir.exists():
-            return {
-                "downloads": "/data/downloads",
-                "library": "/data/library",
-                "torrents": "/data/torrents",
-                "import": "/data/imports",
-                "temp": "/data/temp",
-            }
-        base = settings.download_path.parent
+        """
+        Returns default storage folders under the required architecture:
+        Media folders under /media, temporary application folder under /data/temp.
+        """
         return {
-            "downloads": str(settings.download_path),
-            "library": str(base / "library"),
-            "torrents": str(base / "torrents"),
-            "import": str(base / "imports"),
-            "temp": str(settings.temp_path),
+            "downloads": "/media/Downloads",
+            "library": "/media/Library",
+            "torrents": "/media/Torrents",
+            "import": "/media/Imports",
+            "temp": "/data/temp",
         }
 
     def _get_storage_path(self) -> Path:
         """
         Determines the safe persistence path for runtime settings.
         Prefers persistent volume settings.data_path / "settings.json",
-        falling back to /data/settings.json or /data/downloads/.settings.json.
+        falling back to /data/app/settings.json or /data/settings.json.
+        Never writes settings to media directories.
         """
         try:
             dp = settings.data_path
             if dp.exists() and os.access(str(dp), os.W_OK):
                 return dp / "settings.json"
+        except Exception:
+            pass
+        app_dir = Path("/data/app")
+        try:
+            if app_dir.exists() and os.access(str(app_dir), os.W_OK):
+                return app_dir / "settings.json"
         except Exception:
             pass
         data_dir = Path("/data")
@@ -90,7 +91,7 @@ class SettingsService:
                 return data_dir / "settings.json"
         except Exception:
             pass
-        return settings.download_path / ".settings.json"
+        return Path("/data/app/settings.json")
 
     def init_settings(self) -> None:
         """Loads persisted settings from disk if available."""
@@ -351,8 +352,8 @@ class SettingsService:
             self._prowlarr_api_key = clean_pk if clean_pk else None
 
         if prowlarr_timeout_seconds is not None:
-            if not (2 <= prowlarr_timeout_seconds <= 120):
-                raise ValidationError("prowlarr_timeout_seconds must be between 2 and 120 seconds.")
+            if not (2 <= prowlarr_timeout_seconds <= 300):
+                raise ValidationError("prowlarr_timeout_seconds must be between 2 and 300 seconds.")
             self._prowlarr_timeout_seconds = int(prowlarr_timeout_seconds)
 
         if monitoring_enabled is not None:
@@ -717,29 +718,43 @@ class SettingsService:
         return self._automation_quality_upgrades_enabled
 
     def get_storage_folder(self, category: str) -> Optional[str]:
-        if not self._initialized or not self._storage_folders:
+        if not self._initialized:
             self.init_settings()
+        if not self._storage_folders:
+            self._storage_folders = self._get_default_storage_folders()
         return self._storage_folders.get(category)
 
     def set_storage_folder(self, category: str, path_str: str) -> Dict[str, str]:
-        if not self._initialized or not self._storage_folders:
+        if not self._initialized:
             self.init_settings()
+        if not self._storage_folders:
+            self._storage_folders = self._get_default_storage_folders()
+        if self._storage_folders.get(category) == str(path_str):
+            return dict(self._storage_folders)
         self._storage_folders[category] = str(path_str)
         self._save_settings()
         return dict(self._storage_folders)
 
     def set_all_storage_folders(self, folders: Dict[str, str]) -> Dict[str, str]:
-        if not self._initialized or not self._storage_folders:
+        if not self._initialized:
             self.init_settings()
+        if not self._storage_folders:
+            self._storage_folders = self._get_default_storage_folders()
+        changed = False
         for k, v in folders.items():
             if isinstance(v, str):
-                self._storage_folders[k] = v
-        self._save_settings()
+                if self._storage_folders.get(k) != v:
+                    self._storage_folders[k] = v
+                    changed = True
+        if changed:
+            self._save_settings()
         return dict(self._storage_folders)
 
     def get_all_storage_folders(self) -> Dict[str, str]:
-        if not self._initialized or not self._storage_folders:
+        if not self._initialized:
             self.init_settings()
+        if not self._storage_folders:
+            self._storage_folders = self._get_default_storage_folders()
         return dict(self._storage_folders)
 
 
