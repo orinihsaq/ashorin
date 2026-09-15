@@ -1,0 +1,10 @@
+{
+  "name": "ashoriN",
+  "short_name": "ashoriN",
+  "description": "High-performance precision media extraction utility powered by yt-dlp, FFmpeg, and libtorrent.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#9333ea",
+  "icons": []
+}

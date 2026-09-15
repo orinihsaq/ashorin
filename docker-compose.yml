@@ -1,21 +1,35 @@
 services:
-  media-downloader:
+  ashorin:
     build:
       context: .
       dockerfile: Dockerfile
+    image: orinihsaq/ashorin:latest
     container_name: ashorin
+    restart: unless-stopped
+
     ports:
       - "8080:8080"
+
+    user: "10001:10"
+
     volumes:
-      - ./downloads:/data/downloads
-      - ./temp:/data/temp
+      - type: bind
+        source: ./data
+        target: /data
+        read_only: false
+
+      - type: bind
+        source: ./media
+        target: /media
+        read_only: false
+
     environment:
       APP_PORT: "8080"
       APP_HOST: "0.0.0.0"
-      DOWNLOAD_DIR: "/data/downloads"
-      TEMP_DIR: "/data/temp"
       MAX_CONCURRENT_DOWNLOADS: "2"
-      DOWNLOAD_RETENTION: "86400"
+      DOWNLOAD_RETENTION_ENABLED: "false"
+      DOWNLOAD_RETENTION_DAYS: "7"
+      DOWNLOAD_RETENTION: "0"
       TEMP_RETENTION: "3600"
       YTDLP_AUTO_UPDATE: "true"
       YTDLP_UPDATE_INTERVAL: "86400"
@@ -23,4 +37,17 @@ services:
       MAX_DOWNLOAD_SIZE: "10G"
       DOWNLOAD_TIMEOUT: "3600"
       LOG_LEVEL: "INFO"
-    restart: unless-stopped
+      MEDIA_DISCOVERY_ENABLED: "false"
+      TMDB_ENABLED: "true"
+      TMDB_API_KEY: ""
+
+    # Use Docker's default bridge network so outbound internet access works on
+    # UGREEN/NAS environments. Compose normally creates an isolated project network
+    # that lacks a WAN route on UGOS — this matches the behaviour of UI-created containers.
+    network_mode: "bridge"
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
